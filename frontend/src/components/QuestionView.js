@@ -13,7 +13,6 @@ class QuestionView extends Component {
       page: 1,
       totalQuestions: 0,
       categories: {},
-      currentCategory: null,
     }
   }
 
@@ -23,14 +22,13 @@ class QuestionView extends Component {
 
   getQuestions = () => {
     $.ajax({
-      url: `/questions?page=${this.state.page}`, //TODO: update request URL
+      url: `/questions?page=${this.state.page}`,
       type: "GET",
       success: (result) => {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
-          categories: result.categories,
-          currentCategory: result.current_category })
+          categories: result.categories })
         return;
       },
       error: (error) => {
@@ -65,8 +63,7 @@ class QuestionView extends Component {
       success: (result) => {
         this.setState({
           questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category })
+          totalQuestions: result.total_questions })
         return;
       },
       error: (error) => {
@@ -90,8 +87,7 @@ class QuestionView extends Component {
       success: (result) => {
         this.setState({
           questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category })
+          totalQuestions: result.total_questions })
         return;
       },
       error: (error) => {
