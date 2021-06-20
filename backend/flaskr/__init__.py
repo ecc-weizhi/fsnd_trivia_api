@@ -54,6 +54,18 @@ def create_app(test_config=None):
             "total_questions": len(formatted_questions),
         })
 
+    @app.route('/categories', methods=['GET'])
+    def get_categories():
+        categories = Category.query.all()
+        id_to_type_map = {}
+        for category in categories:
+            id_to_type_map[category.id] = category.type
+
+        return jsonify({
+            "success": True,
+            "categories": id_to_type_map,
+        })
+
     return app
 
 
