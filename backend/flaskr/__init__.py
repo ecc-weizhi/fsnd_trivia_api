@@ -1,3 +1,4 @@
+import json
 import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -41,6 +42,24 @@ def create_app(test_config=None):
             "questions": formatted_questions[start_index_inclusive:end_index_exclusive],
             "total_questions": len(formatted_questions),
             "categories": formatted_categories,
+        })
+
+    @app.route('/questions', methods=['POST'])
+    def search_questions():
+        data_string = request.data
+        data_dictionary = json.loads(data_string)
+        raw_search_term = data_dictionary["searchTerm"]
+        search_term = "%{}%".format(raw_search_term)
+
+        questions = Question.query \
+            .filter(Question.question.ilike(search_term)) \
+            .all()
+        formatted_questions = [question.format() for question in questions]
+
+        return jsonify({
+            "success": True,
+            "questions": formatted_questions,
+            "total_questions": len(formatted_questions),
         })
 
     @app.route('/categories/<int:category_id>/questions', methods=['GET'])
