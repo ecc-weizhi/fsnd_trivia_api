@@ -23,7 +23,6 @@ def create_app(test_config=None):
 
     @app.route('/questions', methods=['GET'])
     def get_questions():
-        # Implement pagniation
         page = request.args.get('page', 1, type=int)
 
         start_index_inclusive = (page - 1) * QUESTIONS_PER_PAGE
@@ -32,8 +31,8 @@ def create_app(test_config=None):
         questions = Question.query.all()
         formatted_questions = [question.format() for question in questions]
 
-        categories = Category.query.all()
         formatted_categories = {}
+        categories = Category.query.all()
         for category in categories:
             formatted_categories[category.id] = category.type
 
@@ -42,7 +41,17 @@ def create_app(test_config=None):
             "questions": formatted_questions[start_index_inclusive:end_index_exclusive],
             "total_questions": len(formatted_questions),
             "categories": formatted_categories,
-            "current_category": None,
+        })
+
+    @app.route('/categories/<int:category_id>/questions', methods=['GET'])
+    def get_questions_by_category(category_id):
+        questions = Question.query.filter_by(category=category_id).all()
+        formatted_questions = [question.format() for question in questions]
+
+        return jsonify({
+            "success": True,
+            "questions": formatted_questions,
+            "total_questions": len(formatted_questions),
         })
 
     return app
