@@ -118,6 +118,30 @@ def create_app(test_config=None):
             "categories": id_to_type_map,
         })
 
+    @app.route('/quizzes', methods=['POST'])
+    def get_next_question():
+        data_string = request.data
+        data_dictionary = json.loads(data_string)
+        previous_questions = data_dictionary["previous_questions"]
+        quiz_category = data_dictionary["quiz_category"]
+
+        query = Question.query
+
+        # filter by category
+        if quiz_category != 0:
+            query = query.filter(Question.category == quiz_category["id"])
+
+        # filter by id
+        for previous_question_id in previous_questions:
+            query = query.filter(Question.id != previous_question_id)
+
+        question = query.first()
+
+        return jsonify({
+            "success": True,
+            "question": question.format() if question else None,
+        })
+
     return app
 
 
