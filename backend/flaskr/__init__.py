@@ -1,10 +1,13 @@
 import json
 import os
+from json import JSONDecodeError
+
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
+from .client_error_exceptions import ClientErrorException, NotFound, UnprocessableEntity, BadRequest
 from .models import setup_db, Question, Category, db
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -23,13 +26,12 @@ def create_app(test_config=None):
         response.headers.add('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE,OPTIONS')
         return response
 
-    @app.errorhandler(404)
-    def not_found(error):
+    @app.errorhandler(ClientErrorException)
+    def client_error(error):
         return jsonify({
             "success": False,
-            "error": 404,
-            "message": "Not found"
-        }), 404
+            "message": error.get_message(),
+        }), error.get_status_code()
 
     @app.errorhandler(500)
     def internal_server_error(error):
@@ -64,7 +66,10 @@ def create_app(test_config=None):
     @app.route('/questions', methods=['POST'])
     def post_questions():
         data_string = request.data
-        request_json = json.loads(data_string)
+        try:
+            request_json = json.loads(data_string)
+        except JSONDecodeError:
+            raise BadRequest()
 
         if "searchTerm" in request_json:
             # performing a search
@@ -90,11 +95,30 @@ def create_app(test_config=None):
 
     @app.route('/questions', methods=['POST'])
     def add_question(request_json):
+        # error checking
+        field_question = request_json.get("question", None)
+        field_answer = request_json.get("answer", None)
+        field_category = request_json.get("category", None)
+        field_difficulty = request_json.get("difficulty", None)
+
+        missing_field = []
+        if not field_question:
+            missing_field.append("question")
+        if not field_answer:
+            missing_field.append("answer")
+        if not field_category:
+            missing_field.append("category")
+        if not field_difficulty:
+            missing_field.append("difficulty")
+
+        if missing_field:
+            raise UnprocessableEntity(missing_field)
+
         question = Question(
-            request_json["question"],
-            request_json["answer"],
-            request_json["category"],
-            request_json["difficulty"]
+            field_question,
+            field_answer,
+            field_category,
+            field_difficulty
         )
 
         try:
@@ -114,7 +138,10 @@ def create_app(test_config=None):
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
         try:
-            Question.query.filter_by(id=question_id).first_or_404().delete()
+            question = Question.query.filter_by(id=question_id).first()
+            if not question:
+                raise NotFound("questions", question_id)
+            question.delete()
             db.session.commit()
             is_success = True
         except SQLAlchemyError:
@@ -153,18 +180,30 @@ def create_app(test_config=None):
     @app.route('/quizzes', methods=['POST'])
     def get_next_question():
         data_string = request.data
-        data_dictionary = json.loads(data_string)
-        previous_questions = data_dictionary["previous_questions"]
-        quiz_category = data_dictionary["quiz_category"]
+        try:
+            request_json = json.loads(data_string)
+        except JSONDecodeError:
+            raise BadRequest()
+
+        # error checking
+        field_previous_questions = request_json.get("previous_questions", [])
+        field_quiz_category = request_json.get("quiz_category", None)
+
+        missing_field = []
+        if not field_quiz_category:
+            missing_field.append("quiz_category")
+
+        if missing_field:
+            raise UnprocessableEntity(missing_field)
 
         query = Question.query
 
         # filter by category
-        if quiz_category != 0:
-            query = query.filter(Question.category == quiz_category["id"])
+        if field_quiz_category != 0:
+            query = query.filter(Question.category == field_quiz_category["id"])
 
         # filter by id
-        for previous_question_id in previous_questions:
+        for previous_question_id in field_previous_questions:
             query = query.filter(Question.id != previous_question_id)
 
         question = query.first()
