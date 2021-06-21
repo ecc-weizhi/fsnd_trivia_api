@@ -5,7 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
-from models import setup_db, Question, Category
+from models import setup_db, Question, Category, db
+from sqlalchemy.exc import SQLAlchemyError
 
 QUESTIONS_PER_PAGE = 10
 
@@ -21,6 +22,22 @@ def create_app(test_config=None):
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE,OPTIONS')
         return response
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({
+            "success": False,
+            "error": 404,
+            "message": "Not found"
+        }), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return jsonify({
+            "success": False,
+            "error": 500,
+            "message": "Internal Server Error"
+        }), 500
 
     @app.route('/questions', methods=['GET'])
     def get_questions():
@@ -61,6 +78,22 @@ def create_app(test_config=None):
             "questions": formatted_questions,
             "total_questions": len(formatted_questions),
         })
+
+    @app.route('/questions/<int:question_id>', methods=['DELETE'])
+    def delete_question(question_id):
+        try:
+            Question.query.filter_by(id=question_id).first_or_404().delete()
+            db.session.commit()
+            is_success = True
+        except SQLAlchemyError:
+            is_success = False
+
+        if is_success:
+            return jsonify({
+                "success": is_success,
+            })
+        else:
+            abort(500)
 
     @app.route('/categories/<int:category_id>/questions', methods=['GET'])
     def get_questions_by_category(category_id):
