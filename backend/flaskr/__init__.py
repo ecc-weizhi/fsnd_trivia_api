@@ -62,10 +62,19 @@ def create_app(test_config=None):
         })
 
     @app.route('/questions', methods=['POST'])
-    def search_questions():
+    def post_questions():
         data_string = request.data
-        data_dictionary = json.loads(data_string)
-        raw_search_term = data_dictionary["searchTerm"]
+        request_json = json.loads(data_string)
+
+        if "searchTerm" in request_json:
+            # performing a search
+            return search_questions(request_json)
+        else:
+            # performing add question
+            return add_question(request_json)
+
+    def search_questions(request_json):
+        raw_search_term = request_json["searchTerm"]
         search_term = "%{}%".format(raw_search_term)
 
         questions = Question.query \
@@ -78,6 +87,29 @@ def create_app(test_config=None):
             "questions": formatted_questions,
             "total_questions": len(formatted_questions),
         })
+
+    @app.route('/questions', methods=['POST'])
+    def add_question(request_json):
+        question = Question(
+            request_json["question"],
+            request_json["answer"],
+            request_json["category"],
+            request_json["difficulty"]
+        )
+
+        try:
+            db.session.add(question)
+            db.session.commit()
+            is_success = True
+        except SQLAlchemyError:
+            is_success = False
+
+        if is_success:
+            return jsonify({
+                "success": is_success,
+            })
+        else:
+            abort(500)
 
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
