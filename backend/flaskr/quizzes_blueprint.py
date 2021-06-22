@@ -21,8 +21,6 @@ def get_next_question():
     field_previous_questions = request_json.get("previous_questions", [])
     field_quiz_category = request_json.get("quiz_category", None)
 
-    print(field_previous_questions, field_quiz_category)
-
     missing_field = []
     if not field_quiz_category:
         missing_field.append("quiz_category")

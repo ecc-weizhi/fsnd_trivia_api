@@ -148,6 +148,29 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data["categories"])
 
+    def test_post_quizzes(self):
+        res = self.client().post('/quizzes', json={"previous_questions": [], "quiz_category": {"id": 2, "type": "Art"}})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertTrue(data['question'])
+
+    def test_malformed_json_post_quizzes(self):
+        res = self.client().post('/quizzes', data='{"foo":"bar":"hello"}')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(data['success'], False)
+
+    def test_missing_field_post_quizzes(self):
+        res = self.client().post('/quizzes', json={"previous_questions": []})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(data['success'], False)
+
+
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()
