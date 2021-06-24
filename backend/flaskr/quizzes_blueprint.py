@@ -24,7 +24,7 @@ def get_next_question():
     missing_field = []
     if not field_quiz_category:
         missing_field.append("quiz_category")
-    elif not field_quiz_category.get("id", None):
+    elif field_quiz_category.get("id", None) is None:
         missing_field.append("quiz_category.id")
 
     if missing_field:
