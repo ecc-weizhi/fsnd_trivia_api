@@ -218,7 +218,8 @@ question_id | integer | path |
 
 ```json
 {
-  "success": true
+  "success": true,
+  "deleted_question_id": 23
 }
 ```
 

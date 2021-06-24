@@ -125,6 +125,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
+        self.assertEqual(data['deleted_question_id'], 23)
 
     def test_delete_non_existing_question(self):
         res = self.client().delete('/questions/1000')

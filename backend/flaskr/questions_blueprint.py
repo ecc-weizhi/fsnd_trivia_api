@@ -123,6 +123,7 @@ def delete_question(question_id):
     if is_success:
         return jsonify({
             "success": is_success,
+            "deleted_question_id": question_id
         })
     else:
         abort(500)
